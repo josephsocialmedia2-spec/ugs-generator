@@ -1,341 +1,226 @@
-<!doctype html>
+  <!doctype html>
 <html lang="it">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>UGS Video Generator</title>
+  <title>UGS Avatar Video Generator</title>
+
   <style>
-    :root { --b:#111; --g:#666; --bg:#f7f7f8; --card:#fff; --br:#e6e6e9; }
-    body{ margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial; background:var(--bg); color:var(--b); }
-    .wrap{ max-width:980px; margin:0 auto; padding:18px; }
-    h1{ font-size:22px; margin:0 0 8px; }
-    .sub{ color:var(--g); margin:0 0 14px; font-size:13px; }
-    .grid{ display:grid; grid-template-columns: 1fr; gap:12px; }
-    @media(min-width:900px){ .grid{ grid-template-columns: 420px 1fr; } }
-    .card{ background:var(--card); border:1px solid var(--br); border-radius:14px; padding:14px; box-shadow:0 10px 25px rgba(0,0,0,.04); }
-    label{ display:block; font-size:12px; color:var(--g); margin:10px 0 6px; }
+    body{
+      margin:0;
+      font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;
+      background:#f5f6f8;
+      color:#111;
+    }
+    .wrap{
+      max-width:980px;
+      margin:0 auto;
+      padding:16px;
+      display:grid;
+      gap:14px;
+    }
+    @media(min-width:900px){
+      .wrap{ grid-template-columns:420px 1fr; }
+    }
+    .card{
+      background:#fff;
+      border:1px solid #e5e6ea;
+      border-radius:16px;
+      padding:14px;
+      box-shadow:0 8px 24px rgba(0,0,0,.05);
+    }
+    h1{ margin:0 0 6px; font-size:20px; }
+    .sub{ font-size:12px; opacity:.75; margin-bottom:10px; }
+    label{ display:block; font-size:12px; opacity:.7; margin:10px 0 6px; }
     input,select,textarea{
-      width:100%; padding:10px 12px; border-radius:12px; border:1px solid var(--br);
-      font-size:14px; outline:none; background:#fff;
+      width:100%;
+      padding:10px 12px;
+      border-radius:12px;
+      border:1px solid #e5e6ea;
+      font-size:14px;
     }
-    textarea{ min-height:84px; resize:vertical; }
+    textarea{ min-height:90px; resize:vertical; }
     .row{ display:flex; gap:10px; flex-wrap:wrap; }
-    .row > div{ flex:1 1 160px; }
-    .btns{ display:flex; gap:10px; flex-wrap:wrap; margin-top:12px; }
+    .row > *{ flex:1 1 160px; }
     button{
-      border:1px solid var(--br); background:#111; color:#fff; border-radius:12px;
-      padding:10px 12px; cursor:pointer; font-weight:700;
+      padding:10px 12px;
+      border-radius:12px;
+      border:1px solid #e5e6ea;
+      background:#111;
+      color:#fff;
+      font-weight:800;
+      cursor:pointer;
     }
-    button.secondary{ background:#fff; color:#111; }
-    .out h2{ font-size:14px; margin:0 0 8px; color:var(--g); font-weight:800; }
-    .box{ border:1px dashed var(--br); border-radius:14px; padding:12px; background:#fcfcfd; }
-    .mono{ white-space:pre-wrap; line-height:1.45; font-size:14px; }
-    .pill{ display:inline-block; padding:6px 10px; border-radius:999px; border:1px solid var(--br); font-size:12px; margin:4px 6px 0 0; background:#fff; }
-    .small{ font-size:12px; color:var(--g); margin-top:8px; }
+    button.secondary{
+      background:#fff;
+      color:#111;
+    }
+    .btns{ display:flex; gap:10px; flex-wrap:wrap; margin-top:12px; }
+    .box{
+      border:1px dashed #e5e6ea;
+      border-radius:14px;
+      padding:12px;
+      background:#fcfcfd;
+      white-space:pre-wrap;
+      line-height:1.45;
+      font-size:14px;
+    }
     .ok{ color:#0a7a2f; font-weight:800; }
+    .hint{ font-size:12px; opacity:.75; margin-top:8px; line-height:1.4; }
   </style>
 </head>
 <body>
-  <div class="wrap">
-    <h1>UGS Video Generator (Immobiliare)</h1>
-    <p class="sub">Genera script UGS (20–35s), testo overlay, caption e hashtag. Copia & registra. Niente fuffa.</p>
 
-    <div class="grid">
-      <!-- INPUT -->
-      <div class="card">
-        <div class="row">
-          <div>
-            <label>Formato</label>
-            <select id="format">
-              <option value="reel">Reel/TikTok (25–35s)</option>
-              <option value="short">Short (15–20s)</option>
-              <option value="story">Story (10–15s)</option>
-            </select>
-          </div>
-          <div>
-            <label>Obiettivo</label>
-            <select id="goal">
-              <option value="trust">Fiducia / autorevolezza</option>
-              <option value="leads">Contatti (soft CTA)</option>
-              <option value="awareness">Notorietà locale</option>
-            </select>
-          </div>
-        </div>
+<div class="wrap">
 
-        <label>Via / Zona</label>
-        <input id="street" placeholder="Es. Via Roma / Quartiere San Paolo" />
+  <!-- INPUT -->
+  <div class="card">
+    <h1>UGS Avatar Generator</h1>
+    <div class="sub">
+      Genera testo pronto per <b>CapCut AI Avatar</b>.  
+      Tu clicchi → copi → CapCut genera il video.
+    </div>
 
-        <div class="row">
-          <div>
-            <label>Città</label>
-            <input id="city" placeholder="Es. Milano" />
-          </div>
-          <div>
-            <label>Dato (facoltativo)</label>
-            <input id="dataPoint" placeholder="Es. 23 annunci / 3.600 €/mq" />
-          </div>
-        </div>
+    <label>Via / Zona</label>
+    <input id="street" placeholder="Es. Via Roma / Quartiere San Paolo">
 
-        <label>Angolo (scegli il tipo di video)</label>
-        <select id="angle">
-          <option value="hotstreet">“In questa via succede questo” (iper-locale)</option>
-          <option value="sqm">Prezzo al mq (range / realtà)</option>
-          <option value="mistake">Errore comune dei venditori</option>
-          <option value="myth">Sfatiamo un mito</option>
-          <option value="checklist">Mini-checklist per vendere</option>
-        </select>
-
-        <label>Stile UGS</label>
-        <select id="tone">
-          <option value="casual">Casual / amichevole</option>
-          <option value="direct">Diretto / “senza giri”</option>
-          <option value="calm">Calmo / rassicurante</option>
-        </select>
-
-        <label>Note (facoltative)</label>
-        <textarea id="notes" placeholder="Es. target famiglie, zona residenziale, molte richieste, ecc."></textarea>
-
-        <div class="btns">
-          <button id="gen">GENERA</button>
-          <button class="secondary" id="copyAll">Copia tutto</button>
-          <button class="secondary" id="random">Random template</button>
-        </div>
-
-        <div class="small">
-          Tip: per UGS vero → selfie, luce naturale, una frase per riga, niente perfezione.
-        </div>
+    <div class="row">
+      <div>
+        <label>Città</label>
+        <input id="city" placeholder="Es. Milano">
       </div>
-
-      <!-- OUTPUT -->
-      <div class="card out">
-        <h2>Script parlato</h2>
-        <div class="box"><div id="script" class="mono">Premi GENERA.</div></div>
-
-        <div style="height:12px"></div>
-
-        <h2>Testo overlay (3 righe)</h2>
-        <div class="box"><div id="overlay" class="mono">—</div></div>
-
-        <div style="height:12px"></div>
-
-        <h2>Caption</h2>
-        <div class="box"><div id="caption" class="mono">—</div></div>
-
-        <div style="height:12px"></div>
-
-        <h2>Hashtag</h2>
-        <div class="box" id="tags"></div>
-
-        <div style="height:12px"></div>
-
-        <h2>Checklist ripresa UGS</h2>
-        <div class="box mono" id="check">
-• 9:16 verticale
-• 1 hook nei primi 2–3s
-• Sottotitoli sempre
-• 1 idea sola
-• CTA soft (commenta “ZONA” / scrivimi)
-        </div>
-
-        <div class="small"><span class="ok">✅</span> Se vuoi, poi lo agganciamo al tuo “Radar” (via/zona auto) e genera 10 video in batch.</div>
+      <div>
+        <label>Dato (facoltativo)</label>
+        <input id="data" placeholder="Es. 23 annunci / 3.600 €/mq">
       </div>
+    </div>
+
+    <label>Tipo video</label>
+    <select id="angle">
+      <option value="hot">Via calda / situazione anomala</option>
+      <option value="sqm">Prezzo al mq / realtà</option>
+      <option value="mistake">Errore comune</option>
+      <option value="myth">Sfatiamo un mito</option>
+    </select>
+
+    <label>Stile</label>
+    <select id="tone">
+      <option value="news">News locale (credibile)</option>
+      <option value="direct">Diretto / secco</option>
+      <option value="calm">Calmo / rassicurante</option>
+    </select>
+
+    <div class="btns">
+      <button id="gen">GENERA TESTO</button>
+      <button class="secondary" id="copyAvatar">Copia testo AVATAR</button>
+      <button class="secondary" id="openCapcut">Apri CapCut</button>
+    </div>
+
+    <div id="msg" class="hint">Pronto.</div>
+  </div>
+
+  <!-- OUTPUT -->
+  <div class="card">
+    <h1>Script Avatar</h1>
+    <div class="sub">
+      Formattato per AI Avatar (1 frase per riga, respiro naturale).
+    </div>
+    <div id="out" class="box">Premi “GENERA TESTO”.</div>
+
+    <div class="hint">
+      <span class="ok">✔</span> Workflow reale:  
+      Genera → Copia → CapCut → AI Avatar → Generate.
     </div>
   </div>
 
+</div>
+
 <script>
-  const $ = (id)=>document.getElementById(id);
-
-  const pick = (arr)=>arr[Math.floor(Math.random()*arr.length)];
-
-  function sanitize(x){ return (x||"").trim(); }
-
-  function buildHashtags(city){
-    const base = ["#immobiliare","#caseinvendita","#venderecasa","#valutazioneimmobile","#agenziaimmobiliare","#reelsitalia","#tiktokitalia","#mercatoimmobiliare"];
-    const local = city ? [`#${city.replace(/\s+/g,"").toLowerCase()}`] : [];
-    const extra = ["#quartiere","#zonacalda","#consigliimmobiliari","#casaitalia"];
-    return [...local, ...base, ...extra].slice(0, 12);
-  }
-
-  function scriptByAngle({format,goal,angle,tone,street,city,dataPoint,notes}) {
-    const where = [street, city].filter(Boolean).join(", ");
-    const dp = dataPoint ? `Dato veloce: ${dataPoint}.` : "";
-    const n = notes ? `(${notes})` : "";
-
-    const hooks = {
-      casual: [
-        `Ok, se sei in zona ${where}, ascolta questa cosa…`,
-        `Mini aggiornamento rapido su ${where}.`,
-        `Se stai pensando di vendere in ${where}, 20 secondi e ti chiarisco una cosa.`
-      ],
-      direct: [
-        `In ${where} vedo sempre lo stesso problema.`,
-        `Se vendi in ${where}, questa è la cosa che ti fa perdere tempo (e soldi).`,
-        `${where}: ecco cosa sta succedendo adesso.`
-      ],
-      calm: [
-        `Se sei in ${where}, ti dico una cosa utile e semplice.`,
-        `Parliamo un attimo di ${where}, senza ansia e senza fuffa.`,
-        `Se stai valutando di vendere in ${where}, questo ti aiuta.`
-      ]
-    };
-
-    const ctas = {
-      trust: [
-        `Se vuoi, dimmi “ZONA” nei commenti e ti dico cosa guardare prima di mettere online.`,
-        `Se ti serve un parere onesto sulla tua via, scrivimi “VIA”.`,
-        `Se ti interessa, faccio spesso mini-check gratis sulla zona: scrivimi “CHECK”.`
-      ],
-      leads: [
-        `Se vuoi una valutazione orientativa della tua via, scrivimi in DM “VALUTA”.`,
-        `Se vuoi capire quanto è “vendibile” la tua casa, scrivimi “CASA”.`,
-        `Se vuoi un confronto senza impegno, DM con “ZONA”.`
-      ],
-      awareness: [
-        `Se vivi in zona, salva il video: ti torna utile.`,
-        `Se conosci qualcuno che vuole vendere qui, condividiglielo.`,
-        `Se vuoi altri video su ${city}, dimmi quale via vuoi che analizzi.`
-      ]
-    };
-
-    let body = "";
-    let overlay = "";
-    let caption = "";
-
-    const short = (format === "short");
-    const story = (format === "story");
-
-    if (angle === "hotstreet") {
-      body = [
-        pick(hooks[tone]),
-        dp ? dp : `Qui la richiesta c’è, ma molti annunci restano fermi perché il prezzo/posizionamento è sbagliato.`,
-        `La cosa che fa la differenza? Foto, testo e soprattutto il “perché comprare qui” in 3 secondi.`,
-        `Io quando guardo una casa in zona, controllo 3 segnali: prezzo, presentazione, e feedback reale.`,
-        pick(ctas[goal])
-      ].filter(Boolean).join("\n");
-      overlay = `📍 ${street || "Questa zona"}\n${dataPoint ? dataPoint : "Cosa succede davvero"}\nNon è (solo) il prezzo`;
-      caption = `Aggiornamento rapido su ${where}. ${n}\nSe vuoi che analizzi una via specifica, scrivi “VIA”.`;
-    }
-
-    if (angle === "sqm") {
-      body = [
-        pick(hooks[tone]),
-        dataPoint ? `In questa zona si parla spesso di ${dataPoint}, ma il punto è: ogni via fa storia a sé.` :
-          `Sul prezzo al mq in ${where} c’è un equivoco: si copia il vicino e poi l’annuncio resta fermo.`,
-        `Il prezzo giusto non è “quello che vorrei”: è quello che genera visite e offerte.`,
-        `Se vuoi, ti dico che range ha senso per la tua via con 2 info (mq e stato).`,
-        pick(ctas[goal])
-      ].join("\n");
-      overlay = `€/mq in ${street || "zona"}\nRange realistico > “prezzo del vicino”\nEvita mesi fermi`;
-      caption = `Prezzo al mq: utile solo se contestualizzato per via/condizione.\nScrivimi “VIA” + mq e ti do un range orientativo.`;
-    }
-
-    if (angle === "mistake") {
-      body = [
-        pick(hooks[tone]),
-        `Errore n°1 che vedo: pubblicare e poi sparire (nessun feedback, nessun aggiustamento).`,
-        `Se dopo 7–10 giorni non hai visite/contatti, non è sfortuna: è segnale.`,
-        `Serve correggere: prezzo, foto, e soprattutto la prima frase dell’annuncio.`,
-        pick(ctas[goal])
-      ].join("\n");
-      overlay = `Errore #1\nAnnuncio online ≠ venduto\n7–10 giorni = segnale`;
-      caption = `Se un annuncio resta fermo, di solito non è “la casa”: è come viene posizionata.\nVuoi checklist? Commenta “CHECK”.`;
-    }
-
-    if (angle === "myth") {
-      body = [
-        pick(hooks[tone]),
-        `Mito: “Se la casa è bella si vende da sola”.`,
-        `Realtà: si vende quando il mercato capisce in 3 secondi perché vale quel prezzo.`,
-        `E questo lo fai con presentazione + strategia, non con speranza.`,
-        pick(ctas[goal])
-      ].join("\n");
-      overlay = `Mito immobiliare\n“Si vende da sola”\nNo: si vende se è chiara`;
-      caption = `La differenza la fa chiarezza + posizionamento.\nSe vuoi un parere sulla tua via: “VIA”.`;
-    }
-
-    if (angle === "checklist") {
-      body = [
-        pick(hooks[tone]),
-        `Mini checklist prima di vendere in ${where}:`,
-        `1) Foto luminose e pulite\n2) Prima frase che spiega il valore\n3) Prezzo coerente con la via, non col vicino`,
-        `Se vuoi, ti mando una checklist completa in DM.`,
-        pick(ctas[goal])
-      ].join("\n");
-      overlay = `Checklist vendita\nFoto • Prima frase • Prezzo\nVia > “vicino”`;
-      caption = `Checklist rapida per ${where}.\nSe vuoi quella completa: scrivi “CHECK” in DM.`;
-    }
-
-    // Accorcia per formati
-    if (story) {
-      body = body.split("\n").slice(0, 3).join("\n") + "\n" + pick(ctas[goal]);
-    } else if (short) {
-      body = body.split("\n").slice(0, 4).join("\n");
-    }
-
-    return { body, overlay, caption };
-  }
-
-  function renderTags(tags){
-    $("tags").innerHTML = tags.map(t=>`<span class="pill">${t}</span>`).join("");
-  }
+  const $ = id => document.getElementById(id);
 
   function generate(){
-    const format = $("format").value;
-    const goal = $("goal").value;
-    const angle = $("angle").value;
-    const tone = $("tone").value;
-    const street = sanitize($("street").value);
-    const city = sanitize($("city").value);
-    const dataPoint = sanitize($("dataPoint").value);
-    const notes = sanitize($("notes").value);
+    const street = $("street").value.trim() || "questa zona";
+    const city   = $("city").value.trim()   || "la tua città";
+    const data   = $("data").value.trim();
+    const angle  = $("angle").value;
+    const tone   = $("tone").value;
 
-    const fallbackStreet = street || "questa zona";
-    const fallbackCity = city || "la tua città";
+    let lines = [];
 
-    const out = scriptByAngle({
-      format, goal, angle, tone,
-      street: fallbackStreet,
-      city: fallbackCity,
-      dataPoint, notes
-    });
+    if(angle === "hot"){
+      lines = [
+        `${street}, ${city}.`,
+        `Qui sta succedendo qualcosa di strano.`,
+        data ? `Ci sono ${data}.` : `Ci sono molti immobili in vendita.`,
+        `Non è la zona il problema.`,
+        `È come vengono presentate le case.`,
+        `Chi conosce la micro zona lo capisce subito.`,
+        `Vuoi sapere cosa succede nella tua via?`
+      ];
+    }
 
-    $("script").textContent = out.body;
-    $("overlay").textContent = out.overlay;
-    $("caption").textContent = out.caption;
-    renderTags(buildHashtags(city));
+    if(angle === "sqm"){
+      lines = [
+        `Parliamo di prezzo al metro quadro in ${street}.`,
+        data ? `In zona si parla di ${data}.` : `Molti copiano il prezzo del vicino.`,
+        `Ma ogni via è diversa.`,
+        `Ogni casa è diversa.`,
+        `Il prezzo giusto è quello che genera visite.`,
+        `Vuoi sapere il range realistico della tua via?`
+      ];
+    }
 
-    const check = [
-      "• 9:16 verticale",
-      "• Hook nei primi 2–3 secondi",
-      "• Sottotitoli sempre",
-      "• Tagli rapidi (1–2 pause max)",
-      "• 1 idea sola",
-      `• CTA: ${goal === "leads" ? "DM con parola chiave" : "commento “ZONA/VIA”"}`
-    ].join("\n");
-    $("check").textContent = check;
+    if(angle === "mistake"){
+      lines = [
+        `L'errore più comune che vedo in ${street}.`,
+        `Pubblicare e poi aspettare.`,
+        `Se dopo dieci giorni non hai contatti.`,
+        `Non è sfortuna.`,
+        `È un segnale.`,
+        `Vuoi evitare questo errore?`
+      ];
+    }
+
+    if(angle === "myth"){
+      lines = [
+        `Sfatiamo un mito immobiliare.`,
+        `Se la casa è bella si vende da sola.`,
+        `Non è vero.`,
+        `Si vende quando il messaggio è chiaro.`,
+        `Prezzo.`,
+        `Presentazione.`,
+        `Strategia.`,
+        `Vuoi sapere come funziona nella tua zona?`
+      ];
+    }
+
+    // stile
+    if(tone === "direct"){
+      lines = lines.map(l => l.replace(/\.$/, "!"));
+    }
+    if(tone === "calm"){
+      lines = lines.map(l => l.replace("!", "."));
+    }
+
+    $("out").textContent = lines.join("\n");
+    $("msg").textContent = "Testo generato.";
   }
 
   $("gen").onclick = generate;
 
-  $("random").onclick = () => {
-    const angles = ["hotstreet","sqm","mistake","myth","checklist"];
-    const tones = ["casual","direct","calm"];
-    $("angle").value = pick(angles);
-    $("tone").value = pick(tones);
-    generate();
-  };
-
-  $("copyAll").onclick = async () => {
-    const text =
-`SCRIPT:\n${$("script").textContent}\n\nOVERLAY:\n${$("overlay").textContent}\n\nCAPTION:\n${$("caption").textContent}\n\nHASHTAG:\n${Array.from($("tags").querySelectorAll(".pill")).map(x=>x.textContent).join(" ")}\n`;
+  $("copyAvatar").onclick = async () => {
     try{
-      await navigator.clipboard.writeText(text);
-      msg("✅ Copiato negli appunti.");
-      setTimeout(()=>msg("Pronto."), 1200);
-    } catch {
-      msg("❌ Impossibile copiare (permessi browser). Seleziona e copia manualmente.");
+      await navigator.clipboard.writeText($("out").textContent);
+      $("msg").textContent = "✅ Testo Avatar copiato. Incollalo in CapCut AI Avatar.";
+    }catch{
+      $("msg").textContent = "❌ Non riesco a copiare. Seleziona e copia manualmente.";
     }
   };
+
+  $("openCapcut").onclick = () => {
+    window.open("https://www.capcut.com/", "_blank");
+  };
 </script>
+
 </body>
 </html>
