@@ -1,0 +1,88 @@
+name: Shopify UGC Studio Windows
+
+on:
+  push:
+    branches: [main, feature/shopify-ugc-studio-v2-1]
+    paths:
+      - 'shopify-ugc-studio-source.zip'
+      - '.github/workflows/shopify-ugc-studio-windows.yml'
+  pull_request:
+    paths:
+      - 'shopify-ugc-studio-source.zip'
+      - '.github/workflows/shopify-ugc-studio-windows.yml'
+
+jobs:
+  build-test-install:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Extract reviewed source
+        shell: powershell
+        run: |
+          Expand-Archive -Path 'shopify-ugc-studio-source.zip' -DestinationPath 'source'
+          Move-Item 'source\shopify_ugc_studio' 'shopify-ugc-studio'
+      - name: Install Python dependencies
+        working-directory: shopify-ugc-studio
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements-build.txt
+      - name: Unit and integration tests
+        working-directory: shopify-ugc-studio
+        run: python -m pytest -q
+      - name: Source self-test
+        working-directory: shopify-ugc-studio
+        run: python app/main.py --self-test
+      - name: Build standalone EXE
+        working-directory: shopify-ugc-studio
+        run: |
+          python -m PyInstaller --noconfirm --clean --onefile --noconsole --name ShopifyUGCStudio --add-data "templates;templates" --add-data "static;static" app/main.py
+      - name: Built EXE self-test
+        working-directory: shopify-ugc-studio
+        run: .\dist\ShopifyUGCStudio.exe --self-test
+      - name: Install Inno Setup
+        run: choco install innosetup -y --no-progress
+      - name: Compile installer
+        working-directory: shopify-ugc-studio
+        shell: powershell
+        run: '& "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe" install\installer.iss'
+      - name: Silent install
+        working-directory: shopify-ugc-studio
+        shell: powershell
+        run: |
+          $setup = Resolve-Path 'install\output\ShopifyUGCStudio-Setup.exe'
+          $p = Start-Process -FilePath $setup -ArgumentList '/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART' -Wait -PassThru
+          if ($p.ExitCode -ne 0) { throw "Installer failed with $($p.ExitCode)" }
+      - name: Installed EXE self-test
+        shell: powershell
+        run: |
+          $exe = Join-Path $env:LOCALAPPDATA 'Programs\ShopifyUGCStudio\ShopifyUGCStudio.exe'
+          if (!(Test-Path $exe)) { throw 'Installed EXE missing' }
+          & $exe --self-test
+          if ($LASTEXITCODE -ne 0) { throw 'Installed self-test failed' }
+      - name: Installed HTTP health test
+        shell: powershell
+        run: |
+          $exe = Join-Path $env:LOCALAPPDATA 'Programs\ShopifyUGCStudio\ShopifyUGCStudio.exe'
+          $p = Start-Process -FilePath $exe -ArgumentList '--no-browser' -PassThru
+          try {
+            $ok = $false
+            foreach ($i in 1..20) {
+              Start-Sleep -Milliseconds 750
+              try {
+                $r = Invoke-RestMethod -Uri 'http://127.0.0.1:7865/api/health' -TimeoutSec 2
+                if ($r.status -eq 'ok') { $ok = $true; break }
+              } catch {}
+            }
+            if (-not $ok) { throw 'Installed application did not answer health check' }
+          } finally {
+            Stop-Process -Id $p.Id -Force -ErrorAction SilentlyContinue
+          }
+      - name: Upload tested installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: ShopifyUGCStudio-Windows-Tested
+          path: shopify-ugc-studio/install/output/ShopifyUGCStudio-Setup.exe
+          if-no-files-found: error
