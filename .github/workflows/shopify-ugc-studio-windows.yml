@@ -27,20 +27,27 @@ jobs:
       - name: Unit and integration tests
         working-directory: shopify-ugc-studio
         run: python -m pytest -q
-      - name: Source self-test
+      - name: Source self-test with voice and render
         working-directory: shopify-ugc-studio
         run: python app/main.py --self-test
       - name: Build standalone EXE
         working-directory: shopify-ugc-studio
         run: |
           python -m PyInstaller --noconfirm --clean --onefile --noconsole --name ShopifyUGCStudio --paths "app" --add-data "templates;templates" --add-data "static;static" app/main.py
-      - name: Built EXE self-test
+      - name: Built EXE package test
         working-directory: shopify-ugc-studio
         shell: powershell
         run: |
           $exe = Resolve-Path '.\dist\ShopifyUGCStudio.exe'
-          $p = Start-Process -FilePath $exe -ArgumentList '--self-test' -Wait -PassThru
-          if ($p.ExitCode -ne 0) { throw "Built EXE self-test failed with $($p.ExitCode)" }
+          $p = Start-Process -FilePath $exe -ArgumentList '--package-test' -Wait -PassThru
+          if ($p.ExitCode -ne 0) { throw "Built EXE package test failed with $($p.ExitCode)" }
+      - name: Built EXE render test
+        working-directory: shopify-ugc-studio
+        shell: powershell
+        run: |
+          $exe = Resolve-Path '.\dist\ShopifyUGCStudio.exe'
+          $p = Start-Process -FilePath $exe -ArgumentList '--render-test' -Wait -PassThru
+          if ($p.ExitCode -ne 0) { throw "Built EXE render test failed with $($p.ExitCode)" }
       - name: Install Inno Setup
         run: choco install innosetup -y --no-progress
       - name: Compile installer
@@ -54,13 +61,19 @@ jobs:
           $setup = Resolve-Path 'install\output\ShopifyUGCStudio-F1Avatar-Setup.exe'
           $p = Start-Process -FilePath $setup -ArgumentList '/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART' -Wait -PassThru
           if ($p.ExitCode -ne 0) { throw "Installer failed with $($p.ExitCode)" }
-      - name: Installed EXE self-test
+      - name: Installed EXE package test
         shell: powershell
         run: |
           $exe = Join-Path $env:LOCALAPPDATA 'Programs\ShopifyUGCStudio\ShopifyUGCStudio.exe'
           if (!(Test-Path $exe)) { throw 'Installed EXE missing' }
-          $p = Start-Process -FilePath $exe -ArgumentList '--self-test' -Wait -PassThru
-          if ($p.ExitCode -ne 0) { throw "Installed self-test failed with $($p.ExitCode)" }
+          $p = Start-Process -FilePath $exe -ArgumentList '--package-test' -Wait -PassThru
+          if ($p.ExitCode -ne 0) { throw "Installed package test failed with $($p.ExitCode)" }
+      - name: Installed EXE render test
+        shell: powershell
+        run: |
+          $exe = Join-Path $env:LOCALAPPDATA 'Programs\ShopifyUGCStudio\ShopifyUGCStudio.exe'
+          $p = Start-Process -FilePath $exe -ArgumentList '--render-test' -Wait -PassThru
+          if ($p.ExitCode -ne 0) { throw "Installed render test failed with $($p.ExitCode)" }
       - name: Installed HTTP and F1 Avatar health test
         shell: powershell
         run: |
