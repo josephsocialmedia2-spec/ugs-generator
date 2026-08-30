@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Shopify UGC Studio · F1 Avatar Engine</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <main class="shell">
+    <section class="hero">
+      <div>
+        <span class="eyebrow">LOCAL CREATIVE OS</span>
+        <h1>Shopify UGC Studio <em>v2.2</em></h1>
+        <p>Shopify → Ollama → script UGC → F1 Avatar Engine locale → MP4 verticale. Nessun provider video esterno.</p>
+      </div>
+      <div class="heroActions">
+        <div class="pill">LOCAL ONLY · F1 AVATAR</div>
+        <button class="ghost" onclick="toggleSettings()">⚙ Impostazioni</button>
+      </div>
+    </section>
+
+    <section id="settingsPanel" class="card settings hidden">
+      <div class="settingsHead">
+        <div><span class="eyebrow">CONFIGURAZIONE</span><h2>Impostazioni</h2></div>
+        <button class="ghost small" onclick="toggleSettings()">Chiudi</button>
+      </div>
+      <div class="grid2 settingsGrid">
+        <div class="providerBox">
+          <h3>Shopify Catalogo</h3>
+          <p class="muted">Opzionale. Consente di scegliere i prodotti direttamente dal catalogo.</p>
+          <label>Negozio Shopify<input id="shopifyShop" placeholder="nomestore.myshopify.com"></label>
+          <label>Admin access token<input id="shopifyToken" type="password" placeholder="lascia vuoto per mantenere quello salvato"></label>
+          <small id="shopifySaved" class="saved"></small>
+        </div>
+        <div class="providerBox">
+          <h3>F1 Avatar Engine</h3>
+          <p class="muted">Identità e voce restano sul PC. Il backend neurale, quando installato, viene eseguito localmente; in assenza usa F1 Avatar Lite.</p>
+          <label>Nome avatar<input id="avatarName" placeholder="F1 Avatar"></label>
+          <label>Modalità voce<select id="voiceMode"><option value="local">Voce locale Windows</option><option value="clone">Voice clone locale (model pack)</option></select></label>
+          <small id="avatarStatusText" class="saved"></small>
+        </div>
+      </div>
+      <div class="row right"><button onclick="saveSettings()">Salva impostazioni</button></div>
+      <div id="settingsStatus" class="inlineStatus"></div>
+    </section>
+
+    <section class="card step">
+      <div class="stepnum">1</div>
+      <div class="grow">
+        <div class="sectionHead"><div><h2>Configura F1 Avatar</h2><p class="muted">Carica una foto autorizzata del presenter. Il campione voce è opzionale e resta locale.</p></div></div>
+        <div class="grid2">
+          <label>Foto avatar<input id="avatarFile" type="file" accept="image/*"></label>
+          <label>Campione voce<input id="voiceFile" type="file" accept="audio/*"></label>
+        </div>
+        <div class="row"><button class="secondary" onclick="saveAvatarProfile()">Salva profilo avatar</button><div id="avatarProfileStatus" class="inlineStatus"></div></div>
+      </div>
+    </section>
+
+    <section class="card step">
+      <div class="stepnum">2</div>
+      <div class="grow">
+        <div class="sectionHead"><div><h2>Scegli prodotto</h2><p class="muted">URL pubblico oppure catalogo Shopify collegato.</p></div><button id="catalogBtn" class="secondary compact" onclick="loadCatalog()">Apri catalogo</button></div>
+        <div class="row"><input id="url" placeholder="https://tuostore.com/products/prodotto"><button onclick="importProduct()">Importa URL</button></div>
+        <div id="catalog" class="catalog hidden"></div>
+        <div id="product" class="product hidden"></div>
+      </div>
+    </section>
+
+    <section class="card step">
+      <div class="stepnum">3</div>
+      <div class="grow">
+        <h2>Strategia UGC</h2>
+        <div class="grid3">
+          <label>Target<input id="audience" placeholder="es. donne 30-50, casa e benessere"></label>
+          <label>Lingua<select id="language"><option>Italiano</option><option>English</option><option>Français</option><option>Deutsch</option><option>Español</option></select></label>
+          <label>Concept<select id="count"><option value="3">3 varianti</option><option value="5">5 varianti</option></select></label>
+        </div>
+        <button class="secondary" onclick="generateConcepts()">Genera angoli, hook, script e CTA</button>
+        <div id="concepts" class="concepts"></div>
+      </div>
+    </section>
+
+    <section class="card step">
+      <div class="stepnum">4</div>
+      <div class="grow">
+        <h2>Produzione video</h2>
+        <p class="muted">Seleziona un concept. Entrambe le modalità producono il file sul PC.</p>
+        <div class="renderGrid">
+          <article class="renderMode"><span class="badge free">LOCALE</span><h3>UGC Motion</h3><p>Immagini prodotto, motion, voice-over locale, testi e CTA.</p><label>Durata<input id="localDuration" type="number" value="18" min="8" max="30"></label><button id="renderLocalBtn" disabled onclick="renderVideo('local')">Genera MP4 locale</button></article>
+          <article class="renderMode creator"><span class="badge">F1 AVATAR</span><h3>Presenter locale</h3><p>Avatar parlante generato dal nostro motore. Usa il backend neurale locale se presente, altrimenti F1 Avatar Lite.</p><label>Durata obiettivo<input id="avatarDuration" type="number" value="20" min="8" max="60"></label><button id="renderAvatarBtn" disabled onclick="renderVideo('avatar')">Genera F1 Avatar</button><small id="avatarAvailability"></small></article>
+        </div>
+        <div id="status" class="status"></div>
+      </div>
+    </section>
+
+    <section class="card miniFlow"><span>SHOPIFY</span><b>→</b><span>OLLAMA</span><b>→</b><span>UGC SCRIPT</span><b>→</b><span>F1 AVATAR ENGINE</span><b>→</b><span>MP4 9:16</span></section>
+  </main>
+<script>
+let product=null,concepts=[],selected=null,settings={},avatar={};
+const el=id=>document.getElementById(id);
+const esc=s=>String(s||'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
+window.addEventListener('DOMContentLoaded',loadSettings);
+function toggleSettings(){el('settingsPanel').classList.toggle('hidden')}
+async function loadSettings(){const r=await fetch('/api/settings');settings=await r.json();avatar=settings.avatar||{};el('shopifyShop').value=settings.shopify_shop||'';el('avatarName').value=settings.avatar_name||'F1 Avatar';el('voiceMode').value=settings.avatar_voice_mode||'local';el('shopifySaved').textContent=settings.shopify_configured?'Collegato · token '+(settings.shopify_token_masked||''):'Non configurato';refreshAvatarLabels();updateButtons()}
+function refreshAvatarLabels(){const configured=!!avatar.avatar_configured,neural=!!avatar.neural_backend_ready;const label=configured?`Profilo pronto · ${neural?'backend neurale locale':'F1 Avatar Lite'}`:'Carica una foto avatar';el('avatarStatusText').textContent=label;el('avatarAvailability').textContent=label}
+async function saveSettings(){el('settingsStatus').textContent='Salvataggio…';const body={shopify_shop:el('shopifyShop').value,shopify_access_token:el('shopifyToken').value,avatar_name:el('avatarName').value,avatar_voice_mode:el('voiceMode').value};const r=await fetch('/api/settings',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}),d=await r.json();if(d.error){el('settingsStatus').textContent=d.error;return}el('shopifyToken').value='';el('settingsStatus').textContent='Impostazioni salvate localmente.';await loadSettings()}
+async function saveAvatarProfile(){const fd=new FormData(),a=el('avatarFile').files[0],v=el('voiceFile').files[0];if(a)fd.append('avatar',a);if(v)fd.append('voice',v);if(!a&&!v){el('avatarProfileStatus').textContent='Seleziona almeno un file.';return}el('avatarProfileStatus').textContent='Salvataggio…';const r=await fetch('/api/avatar/profile',{method:'POST',body:fd}),d=await r.json();if(d.error){el('avatarProfileStatus').textContent=d.error;return}avatar=d;el('avatarProfileStatus').textContent='Profilo salvato sul PC.';refreshAvatarLabels();updateButtons()}
+function updateButtons(){const ok=!!selected;el('renderLocalBtn').disabled=!ok;el('renderAvatarBtn').disabled=!ok||!avatar.avatar_configured}
+function showProduct(p){product=p;selected=null;concepts=[];el('concepts').innerHTML='';updateButtons();el('product').classList.remove('hidden');const image=(p.images||[])[0]||'';el('product').innerHTML=`<img src="${esc(image)}" onerror="this.style.display='none'"><div><span class="badge productBadge">PRODOTTO SELEZIONATO</span><h3>${esc(p.title)}</h3><p>${esc(p.description).slice(0,520)}</p><small>${esc(p.vendor||'')} · ${esc(p.price||'')} ${esc(p.currency||'')}</small></div>`}
+async function importProduct(){el('product').classList.remove('hidden');el('product').innerHTML='Importazione in corso…';const r=await fetch('/api/import',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({url:el('url').value})}),d=await r.json();if(d.error){el('product').innerHTML='<b>Errore:</b> '+esc(d.error);return}showProduct(d.product)}
+async function loadCatalog(){el('catalog').classList.remove('hidden');el('catalog').innerHTML='Carico catalogo Shopify…';const r=await fetch('/api/shopify/catalog?limit=30'),d=await r.json();if(d.error){el('catalog').innerHTML='<b>'+esc(d.error)+'</b><p class="muted">Configura dominio e Admin token nelle Impostazioni.</p>';return}if(!d.products.length){el('catalog').innerHTML='Nessun prodotto trovato.';return}window.catalogProducts=d.products;el('catalog').innerHTML=d.products.map((p,i)=>`<button class="catalogItem" onclick="chooseCatalog(${i})"><img src="${esc(p.images?.[0]||'')}" onerror="this.style.display='none'"><span><b>${esc(p.title)}</b><small>${esc(p.price||'')} ${esc(p.currency||'')}</small></span></button>`).join('')}
+function chooseCatalog(i){showProduct(window.catalogProducts[i]);el('catalog').classList.add('hidden')}
+async function generateConcepts(){if(!product){alert('Importa o scegli prima il prodotto.');return}el('concepts').innerHTML='Generazione strategia con AI locale…';const r=await fetch('/api/concepts',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({product,audience:el('audience').value,language:el('language').value,count:+el('count').value})}),d=await r.json();if(d.error){el('concepts').innerHTML=esc(d.error);return}concepts=d.concepts;selected=null;updateButtons();el('concepts').innerHTML=concepts.map((c,i)=>`<article class="concept" onclick="selectConcept(${i},this)"><span>${i+1}</span><h3>${esc(c.angle)}</h3><b>${esc(c.hook)}</b><p>${esc(c.script)}</p><small>CTA: ${esc(c.cta)}</small></article>`).join('')}
+function selectConcept(i,node){selected=concepts[i];document.querySelectorAll('.concept').forEach(x=>x.classList.remove('selected'));node.classList.add('selected');updateButtons()}
+async function renderVideo(mode){if(!product||!selected)return;const isAvatar=mode==='avatar',endpoint=isAvatar?'/api/render/avatar':'/api/render/local',duration=+(isAvatar?el('avatarDuration').value:el('localDuration').value);el('status').textContent=isAvatar?'Avvio F1 Avatar Engine locale…':'Avvio rendering locale…';const r=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({product,concept:selected,duration})}),d=await r.json();if(d.error){el('status').textContent=d.error;return}pollJob(d.job_id)}
+async function pollJob(id){const r=await fetch('/api/jobs/'+id),d=await r.json();if(d.error){el('status').textContent=d.error;return}if(d.status==='ready'){el('status').innerHTML=`Video pronto · motore ${esc(d.avatar_backend||d.engine||'local')} <a class="download" href="${d.download_url}">Scarica MP4</a>`;return}if(d.status==='error'){el('status').textContent='Errore: '+(d.error||'render non riuscito');return}el('status').textContent='Stato: '+d.status;setTimeout(()=>pollJob(id),1200)}
+</script>
+</body>
+</html>

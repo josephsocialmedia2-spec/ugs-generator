@@ -1,0 +1,4 @@
+2.2.0
+F1 Avatar Engine local-only release.
+No external avatar/video provider API.
+Client package: standalone Windows EXE + Inno Setup installer.
