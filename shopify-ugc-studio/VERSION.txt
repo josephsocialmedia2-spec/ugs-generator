@@ -1,0 +1,4 @@
+Shopify UGC Studio v2.1.0
+Build date: 2026-08-30
+Core: Shopify URL + Shopify Admin GraphQL 2026-07 + Ollama concepts + Local UGC MP4 + HeyGen Creator AI
+Distribution: standalone Windows EXE + silent-tested Inno Setup installer + persistent LocalAppData
