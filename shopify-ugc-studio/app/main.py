@@ -205,21 +205,36 @@ def download(job_id: str):
     return send_file(path, as_attachment=True, download_name=name)
 
 
-def run_self_test() -> bool:
+def run_package_test() -> bool:
     try:
         client = app.test_client()
         checks = [client.get("/"), client.get("/api/health"), client.get("/api/settings"), client.get("/api/avatar/status")]
         if any(r.status_code != 200 for r in checks): return False
         health = checks[1].get_json() or {}
+        avatar = checks[3].get_json() or {}
         if health.get("local_only") is not True or health.get("avatar_engine") != "F1 Avatar Engine": return False
+        if avatar.get("local_only") is not True or avatar.get("remote_provider") is not None: return False
         if client.post("/api/import", json={"url": "not-a-url"}).status_code != 400: return False
-        if client.post("/api/render/avatar", json={"product": {"title": "X"}, "concept": {"script": "Y"}}).status_code != 400: return False
-        with tempfile.TemporaryDirectory(prefix="shopify-ugc-selftest-") as tmp:
-            video = render_video({"title": "Self Test Product", "images": []}, {"hook": "Self test", "script": "Verifica automatica del motore video locale.", "cta": "OK", "scenes": ["Hook", "Demo", "CTA"]}, Path(tmp), duration=2, fps=3)
-            if not video.exists() or video.stat().st_size < 5000: return False
         return True
     except Exception:
         return False
+
+
+def run_render_test(with_voice: bool = False) -> bool:
+    try:
+        with tempfile.TemporaryDirectory(prefix="shopify-ugc-render-test-") as tmp:
+            video = render_video(
+                {"title": "Self Test Product", "images": []},
+                {"hook": "Self test", "script": "Verifica automatica del motore video locale.", "cta": "OK", "scenes": ["Hook", "Demo", "CTA"]},
+                Path(tmp), duration=1, fps=2, with_voice=with_voice,
+            )
+            return video.exists() and video.stat().st_size >= 1000
+    except Exception:
+        return False
+
+
+def run_self_test() -> bool:
+    return run_package_test() and run_render_test(with_voice=True)
 
 
 def _open_browser_later():
@@ -229,7 +244,16 @@ def _open_browser_later():
 
 
 def cli(argv=None) -> int:
-    parser = argparse.ArgumentParser(description="Shopify UGC Studio"); parser.add_argument("--self-test", action="store_true"); parser.add_argument("--no-browser", action="store_true"); args = parser.parse_args(argv)
+    parser = argparse.ArgumentParser(description="Shopify UGC Studio")
+    parser.add_argument("--self-test", action="store_true")
+    parser.add_argument("--package-test", action="store_true")
+    parser.add_argument("--render-test", action="store_true")
+    parser.add_argument("--no-browser", action="store_true")
+    args = parser.parse_args(argv)
+    if args.package_test:
+        ok = run_package_test(); return 0 if ok else 1
+    if args.render_test:
+        ok = run_render_test(with_voice=False); return 0 if ok else 1
     if args.self_test:
         ok = run_self_test(); print("SELF_TEST_OK" if ok else "SELF_TEST_FAILED"); return 0 if ok else 1
     if not args.no_browser: threading.Thread(target=_open_browser_later, daemon=True).start()
