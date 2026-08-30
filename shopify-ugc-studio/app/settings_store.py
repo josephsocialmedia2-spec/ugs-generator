@@ -4,13 +4,11 @@ import json
 import os
 from pathlib import Path
 
-
 DEFAULTS = {
     "shopify_shop": "",
     "shopify_access_token": "",
-    "heygen_api_key": "",
-    "heygen_avatar_id": "",
-    "heygen_voice_id": "",
+    "avatar_name": "F1 Avatar",
+    "avatar_voice_mode": "local",
 }
 
 
@@ -30,12 +28,6 @@ def load_settings(base: Path) -> dict:
         data["shopify_shop"] = os.environ["SHOPIFY_SHOP"]
     if os.environ.get("SHOPIFY_ACCESS_TOKEN"):
         data["shopify_access_token"] = os.environ["SHOPIFY_ACCESS_TOKEN"]
-    if os.environ.get("HEYGEN_API_KEY"):
-        data["heygen_api_key"] = os.environ["HEYGEN_API_KEY"]
-    if os.environ.get("HEYGEN_AVATAR_ID"):
-        data["heygen_avatar_id"] = os.environ["HEYGEN_AVATAR_ID"]
-    if os.environ.get("HEYGEN_VOICE_ID"):
-        data["heygen_voice_id"] = os.environ["HEYGEN_VOICE_ID"]
     return data
 
 
@@ -58,10 +50,8 @@ def public_settings(settings: dict) -> dict:
         "shopify_shop": settings.get("shopify_shop", ""),
         "shopify_configured": bool(settings.get("shopify_shop") and settings.get("shopify_access_token")),
         "shopify_token_masked": _mask(settings.get("shopify_access_token", "")),
-        "heygen_configured": bool(settings.get("heygen_api_key")),
-        "heygen_key_masked": _mask(settings.get("heygen_api_key", "")),
-        "heygen_avatar_id": settings.get("heygen_avatar_id", ""),
-        "heygen_voice_id": settings.get("heygen_voice_id", ""),
+        "avatar_name": settings.get("avatar_name", "F1 Avatar"),
+        "avatar_voice_mode": settings.get("avatar_voice_mode", "local"),
     }
 
 
