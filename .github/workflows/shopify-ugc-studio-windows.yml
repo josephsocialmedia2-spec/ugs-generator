@@ -1,9 +1,14 @@
-name: Shopify UGC Studio Windows
+name: Shopify UGC Studio F1 Avatar Windows
 
 on:
   pull_request:
     paths:
-      - 'source-b64/**'
+      - 'shopify-ugc-studio/**'
+      - '.github/workflows/shopify-ugc-studio-windows.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'shopify-ugc-studio/**'
       - '.github/workflows/shopify-ugc-studio-windows.yml'
 
 jobs:
@@ -14,20 +19,6 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - name: Rebuild and extract reviewed source
-        shell: powershell
-        run: |
-          $parts = Get-ChildItem 'source-b64\*.part' | Sort-Object Name
-          if ($parts.Count -lt 1) { throw 'Source chunks missing' }
-          $b64 = ($parts | ForEach-Object { Get-Content $_.FullName -Raw }) -join ''
-          $b64 = $b64 -replace '\s',''
-          [IO.File]::WriteAllBytes('shopify-ugc-studio-source-rebuilt.zip', [Convert]::FromBase64String($b64))
-          Expand-Archive -Path 'shopify-ugc-studio-source-rebuilt.zip' -DestinationPath 'source'
-          $marker = Get-ChildItem 'source' -Recurse -File -Filter 'requirements-build.txt' | Select-Object -First 1
-          if (-not $marker) { throw 'requirements-build.txt missing after extraction' }
-          $root = $marker.Directory.FullName
-          New-Item -ItemType Directory -Force 'shopify-ugc-studio' | Out-Null
-          Copy-Item (Join-Path $root '*') 'shopify-ugc-studio' -Recurse -Force
       - name: Install Python dependencies
         working-directory: shopify-ugc-studio
         run: |
@@ -56,7 +47,7 @@ jobs:
         working-directory: shopify-ugc-studio
         shell: powershell
         run: |
-          $setup = Resolve-Path 'install\output\ShopifyUGCStudio-Setup.exe'
+          $setup = Resolve-Path 'install\output\ShopifyUGCStudio-F1Avatar-Setup.exe'
           $p = Start-Process -FilePath $setup -ArgumentList '/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART' -Wait -PassThru
           if ($p.ExitCode -ne 0) { throw "Installer failed with $($p.ExitCode)" }
       - name: Installed EXE self-test
@@ -66,27 +57,28 @@ jobs:
           if (!(Test-Path $exe)) { throw 'Installed EXE missing' }
           & $exe --self-test
           if ($LASTEXITCODE -ne 0) { throw 'Installed self-test failed' }
-      - name: Installed HTTP health test
+      - name: Installed HTTP and F1 Avatar health test
         shell: powershell
         run: |
           $exe = Join-Path $env:LOCALAPPDATA 'Programs\ShopifyUGCStudio\ShopifyUGCStudio.exe'
           $p = Start-Process -FilePath $exe -ArgumentList '--no-browser' -PassThru
           try {
             $ok = $false
-            foreach ($i in 1..20) {
+            foreach ($i in 1..30) {
               Start-Sleep -Milliseconds 750
               try {
                 $r = Invoke-RestMethod -Uri 'http://127.0.0.1:7865/api/health' -TimeoutSec 2
-                if ($r.status -eq 'ok') { $ok = $true; break }
+                $a = Invoke-RestMethod -Uri 'http://127.0.0.1:7865/api/avatar/status' -TimeoutSec 2
+                if ($r.status -eq 'ok' -and $r.local_only -eq $true -and $r.avatar_engine -eq 'F1 Avatar Engine' -and $a.remote_provider -eq $null) { $ok = $true; break }
               } catch {}
             }
-            if (-not $ok) { throw 'Installed application did not answer health check' }
+            if (-not $ok) { throw 'Installed F1 Avatar application did not pass local health checks' }
           } finally {
             Stop-Process -Id $p.Id -Force -ErrorAction SilentlyContinue
           }
       - name: Upload tested installer
         uses: actions/upload-artifact@v4
         with:
-          name: ShopifyUGCStudio-Windows-Tested
-          path: shopify-ugc-studio/install/output/ShopifyUGCStudio-Setup.exe
+          name: ShopifyUGCStudio-F1Avatar-Windows-Tested
+          path: shopify-ugc-studio/install/output/ShopifyUGCStudio-F1Avatar-Setup.exe
           if-no-files-found: error
