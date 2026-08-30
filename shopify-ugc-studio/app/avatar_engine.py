@@ -13,7 +13,7 @@ import numpy as np
 from PIL import Image, ImageDraw, ImageEnhance, ImageFont
 
 MODEL_NAME = "F1 Avatar Engine"
-MODEL_VERSION = "0.1.0"
+MODEL_VERSION = "0.2.0"
 
 
 def _font(size: int, bold: bool = False):
@@ -34,6 +34,17 @@ def avatar_dir(base: Path) -> Path:
     return path
 
 
+def model_dir(base: Path) -> Path:
+    path = base / "models" / "f1-avatar"
+    path.mkdir(parents=True, exist_ok=True)
+    return path
+
+
+def neural_executable(base: Path) -> Path:
+    override = os.environ.get("F1_AVATAR_NEURAL_EXE", "").strip()
+    return Path(override) if override else model_dir(base) / "F1AvatarNeural.exe"
+
+
 def save_avatar_image(base: Path, raw: bytes, filename: str = "avatar.jpg") -> Path:
     if not raw:
         raise ValueError("Immagine avatar vuota")
@@ -50,8 +61,7 @@ def save_avatar_image(base: Path, raw: bytes, filename: str = "avatar.jpg") -> P
             target = folder / "avatar.jpg"
             rgb.save(target, quality=94)
     finally:
-        if temp.exists() and temp.name != "avatar.jpg":
-            temp.unlink(missing_ok=True)
+        temp.unlink(missing_ok=True)
     return folder / "avatar.jpg"
 
 
@@ -69,27 +79,28 @@ def save_voice_sample(base: Path, raw: bytes, filename: str = "voice.wav") -> Pa
 
 
 def model_status(base: Path) -> dict:
-    model_root = base / "models" / "f1-avatar"
-    neural_exe = Path(os.environ.get("F1_AVATAR_NEURAL_EXE", "").strip()) if os.environ.get("F1_AVATAR_NEURAL_EXE") else model_root / "F1AvatarNeural.exe"
     avatar = avatar_dir(base) / "avatar.jpg"
     voice_samples = list(avatar_dir(base).glob("voice_sample.*"))
+    neural = neural_executable(base)
     return {
         "name": MODEL_NAME,
         "version": MODEL_VERSION,
         "avatar_configured": avatar.exists(),
         "voice_sample_configured": bool(voice_samples),
-        "neural_backend_ready": neural_exe.exists(),
-        "neural_backend": "F1AvatarNeural local runtime" if neural_exe.exists() else "not installed",
+        "neural_backend_ready": neural.exists(),
+        "neural_backend": "F1AvatarNeural local runtime" if neural.exists() else "model pack non installato",
         "fallback_backend": "F1Avatar Lite local renderer",
         "remote_provider": None,
+        "local_only": True,
     }
 
 
 def _synthesize_windows(text: str, output_wav: Path) -> bool:
     if os.name != "nt":
         return False
+    safe_text = text.replace("'@", "' + '@")
     escaped = str(output_wav).replace('"', '`"')
-    ps = f'''$v = New-Object -ComObject SAPI.SpVoice; $s = New-Object -ComObject SAPI.SpFileStream; $s.Open("{escaped}",3,$false); $v.AudioOutputStream=$s; $v.Rate=1; $v.Volume=100; $v.Speak(@'\n{text}\n'@); $s.Close()'''
+    ps = f'''$v = New-Object -ComObject SAPI.SpVoice; $s = New-Object -ComObject SAPI.SpFileStream; $s.Open("{escaped}",3,$false); $v.AudioOutputStream=$s; $v.Rate=1; $v.Volume=100; $v.Speak(@'\n{safe_text}\n'@); $s.Close()'''
     try:
         subprocess.run(["powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", ps], check=True, timeout=180)
         return output_wav.exists() and output_wav.stat().st_size > 1024
@@ -147,7 +158,8 @@ def _render_lite(avatar_path: Path, script: str, output_dir: Path, duration: int
             mouth_open = float(envelope[i]) if has_audio else (0.2 + 0.2 * max(0.0, math.sin(i * 0.45)))
             cx, cy, mw, mh = 360, 825, 94, int(8 + 34 * mouth_open)
             draw.ellipse((cx - mw // 2, cy - mh // 2, cx + mw // 2, cy + mh // 2), fill=(38, 8, 12, 155))
-            if mh > 18: draw.ellipse((cx - 24, cy - 4, cx + 24, cy + 8), fill=(225, 120, 130, 120))
+            if mh > 18:
+                draw.ellipse((cx - 24, cy - 4, cx + 24, cy + 8), fill=(225, 120, 130, 120))
             draw.rounded_rectangle((26, 1125, 694, 1235), radius=24, fill=(0, 0, 0, 150))
             label = "F1 AVATAR · LOCAL"; box = draw.textbbox((0, 0), label, font=title_font)
             draw.text(((720 - (box[2]-box[0]))/2, 1158), label, font=title_font, fill="white")
@@ -164,14 +176,14 @@ def _render_lite(avatar_path: Path, script: str, output_dir: Path, duration: int
 
 
 def _render_neural(base: Path, avatar_path: Path, script: str, output_dir: Path, duration: int) -> Path | None:
-    model_root = base / "models" / "f1-avatar"
-    neural_exe = Path(os.environ.get("F1_AVATAR_NEURAL_EXE", "").strip()) if os.environ.get("F1_AVATAR_NEURAL_EXE") else model_root / "F1AvatarNeural.exe"
-    if not neural_exe.exists():
+    neural = neural_executable(base)
+    if not neural.exists():
         return None
     output = output_dir / "avatar_video.mp4"
-    cmd = [str(neural_exe), "--avatar", str(avatar_path), "--text", script, "--output", str(output), "--duration", str(duration)]
+    cmd = [str(neural), "--avatar", str(avatar_path), "--text", script, "--output", str(output), "--duration", str(duration)]
     voice_samples = list(avatar_dir(base).glob("voice_sample.*"))
-    if voice_samples: cmd += ["--voice-sample", str(voice_samples[0])]
+    if voice_samples:
+        cmd += ["--voice-sample", str(voice_samples[0])]
     subprocess.run(cmd, check=True, timeout=max(300, duration * 30))
     if not output.exists() or output.stat().st_size < 5000:
         raise RuntimeError("Il backend neurale locale non ha prodotto un video valido")
@@ -184,5 +196,6 @@ def render_avatar(base: Path, script: str, output_dir: Path, duration: int = 20)
         raise ValueError("Carica prima una foto avatar autorizzata")
     output_dir.mkdir(parents=True, exist_ok=True)
     neural = _render_neural(base, avatar_path, script, output_dir, duration)
-    if neural: return neural, "neural"
+    if neural:
+        return neural, "neural"
     return _render_lite(avatar_path, script, output_dir, duration), "lite"
