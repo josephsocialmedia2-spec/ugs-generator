@@ -52,7 +52,7 @@ def index():
 
 @app.get("/api/health")
 def api_health():
-    return jsonify({"status": "ok", "version": "2.2.0", "avatar_engine": "F1 Avatar Engine"})
+    return jsonify({"status": "ok", "version": "2.2.0", "avatar_engine": "F1 Avatar Engine", "local_only": True})
 
 
 @app.get("/api/settings")
@@ -210,7 +210,10 @@ def run_self_test() -> bool:
         client = app.test_client()
         checks = [client.get("/"), client.get("/api/health"), client.get("/api/settings"), client.get("/api/avatar/status")]
         if any(r.status_code != 200 for r in checks): return False
+        health = checks[1].get_json() or {}
+        if health.get("local_only") is not True or health.get("avatar_engine") != "F1 Avatar Engine": return False
         if client.post("/api/import", json={"url": "not-a-url"}).status_code != 400: return False
+        if client.post("/api/render/avatar", json={"product": {"title": "X"}, "concept": {"script": "Y"}}).status_code != 400: return False
         with tempfile.TemporaryDirectory(prefix="shopify-ugc-selftest-") as tmp:
             video = render_video({"title": "Self Test Product", "images": []}, {"hook": "Self test", "script": "Verifica automatica del motore video locale.", "cta": "OK", "scenes": ["Hook", "Demo", "CTA"]}, Path(tmp), duration=2, fps=3)
             if not video.exists() or video.stat().st_size < 5000: return False
