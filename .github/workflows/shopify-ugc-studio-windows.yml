@@ -3,7 +3,7 @@ name: Shopify UGC Studio Windows
 on:
   pull_request:
     paths:
-      - 'shopify-ugc-studio-source.zip'
+      - 'source-b64/**'
       - '.github/workflows/shopify-ugc-studio-windows.yml'
 
 jobs:
@@ -14,10 +14,15 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - name: Extract reviewed source
+      - name: Rebuild and extract reviewed source
         shell: powershell
         run: |
-          Expand-Archive -Path 'shopify-ugc-studio-source.zip' -DestinationPath 'source'
+          $parts = Get-ChildItem 'source-b64\*.part' | Sort-Object Name
+          if ($parts.Count -lt 1) { throw 'Source chunks missing' }
+          $b64 = ($parts | ForEach-Object { Get-Content $_.FullName -Raw }) -join ''
+          $b64 = $b64 -replace '\s',''
+          [IO.File]::WriteAllBytes('shopify-ugc-studio-source-rebuilt.zip', [Convert]::FromBase64String($b64))
+          Expand-Archive -Path 'shopify-ugc-studio-source-rebuilt.zip' -DestinationPath 'source'
           Move-Item 'source\shopify_ugc_studio' 'shopify-ugc-studio'
       - name: Install Python dependencies
         working-directory: shopify-ugc-studio
