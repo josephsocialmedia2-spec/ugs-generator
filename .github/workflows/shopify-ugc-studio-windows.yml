@@ -30,30 +30,30 @@ jobs:
       - name: Source self-test with voice and render
         working-directory: shopify-ugc-studio
         run: python app/main.py --self-test
-      - name: Build standalone EXE
+      - name: Build standalone application directory
         working-directory: shopify-ugc-studio
         run: |
-          python -m PyInstaller --noconfirm --clean --onefile --noconsole --name ShopifyUGCStudio --paths "app" --add-data "templates;templates" --add-data "static;static" app/main.py
-      - name: Built EXE live HTTP and render test
+          python -m PyInstaller --noconfirm --clean --onedir --noconsole --name ShopifyUGCStudio --paths "app" --add-data "templates;templates" --add-data "static;static" app/main.py
+      - name: Built application live HTTP and render test
         working-directory: shopify-ugc-studio
         shell: powershell
         run: |
-          $exe = Resolve-Path '.\dist\ShopifyUGCStudio.exe'
+          $exe = Resolve-Path '.\dist\ShopifyUGCStudio\ShopifyUGCStudio.exe'
           $p = Start-Process -FilePath $exe -ArgumentList '--no-browser' -PassThru
           try {
             $ok = $false
-            foreach ($i in 1..30) {
-              Start-Sleep -Milliseconds 750
-              if ($p.HasExited) { throw "Built EXE exited early with $($p.ExitCode)" }
+            foreach ($i in 1..45) {
+              Start-Sleep -Seconds 1
+              if ($p.HasExited) { throw "Built application exited early with $($p.ExitCode)" }
               try {
                 $r = Invoke-RestMethod -Uri 'http://127.0.0.1:7865/api/health' -TimeoutSec 2
                 $a = Invoke-RestMethod -Uri 'http://127.0.0.1:7865/api/avatar/status' -TimeoutSec 2
-                if ($r.status -eq 'ok' -and $r.local_only -eq $true -and $a.local_only -eq $true -and $a.remote_provider -eq $null) { $ok = $true; break }
+                if ($r.status -eq 'ok' -and $r.local_only -eq $true -and $r.avatar_engine -eq 'F1 Avatar Engine' -and $a.local_only -eq $true -and $a.remote_provider -eq $null) { $ok = $true; break }
               } catch {}
             }
-            if (-not $ok) { throw 'Built EXE did not pass live HTTP health check' }
+            if (-not $ok) { throw 'Built application did not pass live HTTP health check' }
             $d = Invoke-RestMethod -Method Post -Uri 'http://127.0.0.1:7865/api/diagnostics/render' -ContentType 'application/json' -Body '{}' -TimeoutSec 60
-            if ($d.ok -ne $true -or $d.local_only -ne $true -or $d.bytes -lt 1000) { throw 'Built EXE local render diagnostic failed' }
+            if ($d.ok -ne $true -or $d.local_only -ne $true -or $d.bytes -lt 1000) { throw 'Built application local render diagnostic failed' }
           } finally {
             Stop-Process -Id $p.Id -Force -ErrorAction SilentlyContinue
           }
@@ -70,7 +70,7 @@ jobs:
           $setup = Resolve-Path 'install\output\ShopifyUGCStudio-F1Avatar-Setup.exe'
           $p = Start-Process -FilePath $setup -ArgumentList '/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART' -Wait -PassThru
           if ($p.ExitCode -ne 0) { throw "Installer failed with $($p.ExitCode)" }
-      - name: Installed EXE live HTTP and render test
+      - name: Installed application live HTTP and render test
         shell: powershell
         run: |
           $exe = Join-Path $env:LOCALAPPDATA 'Programs\ShopifyUGCStudio\ShopifyUGCStudio.exe'
@@ -78,9 +78,9 @@ jobs:
           $p = Start-Process -FilePath $exe -ArgumentList '--no-browser' -PassThru
           try {
             $ok = $false
-            foreach ($i in 1..30) {
-              Start-Sleep -Milliseconds 750
-              if ($p.HasExited) { throw "Installed EXE exited early with $($p.ExitCode)" }
+            foreach ($i in 1..45) {
+              Start-Sleep -Seconds 1
+              if ($p.HasExited) { throw "Installed application exited early with $($p.ExitCode)" }
               try {
                 $r = Invoke-RestMethod -Uri 'http://127.0.0.1:7865/api/health' -TimeoutSec 2
                 $a = Invoke-RestMethod -Uri 'http://127.0.0.1:7865/api/avatar/status' -TimeoutSec 2
