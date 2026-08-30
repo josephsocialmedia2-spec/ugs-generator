@@ -1,6 +1,4 @@
-Shopify UGC Studio v2.2.0
-Build date: 2026-08-30
-Core: Shopify + Ollama concepts + Local UGC MP4 + F1 Avatar Engine
-Video providers: none
-Avatar: local profile + local fallback renderer + local neural backend interface
-Distribution: standalone Windows EXE + Inno Setup installer + persistent LocalAppData
+2.2.0
+F1 Avatar Engine local-only release.
+No external avatar/video provider API.
+Client package: standalone Windows EXE + Inno Setup installer.
