@@ -23,9 +23,11 @@ jobs:
           $b64 = $b64 -replace '\s',''
           [IO.File]::WriteAllBytes('shopify-ugc-studio-source-rebuilt.zip', [Convert]::FromBase64String($b64))
           Expand-Archive -Path 'shopify-ugc-studio-source-rebuilt.zip' -DestinationPath 'source'
-          $root = Get-ChildItem 'source' -Directory | Select-Object -First 1
-          if (-not $root) { throw 'Extracted source root missing' }
-          Move-Item $root.FullName 'shopify-ugc-studio'
+          $marker = Get-ChildItem 'source' -Recurse -File -Filter 'requirements-build.txt' | Select-Object -First 1
+          if (-not $marker) { throw 'requirements-build.txt missing after extraction' }
+          $root = $marker.Directory.FullName
+          New-Item -ItemType Directory -Force 'shopify-ugc-studio' | Out-Null
+          Copy-Item (Join-Path $root '*') 'shopify-ugc-studio' -Recurse -Force
       - name: Install Python dependencies
         working-directory: shopify-ugc-studio
         run: |
