@@ -1,11 +1,6 @@
 name: Shopify UGC Studio Windows
 
 on:
-  push:
-    branches: [main, feature/shopify-ugc-studio-v2-1]
-    paths:
-      - 'shopify-ugc-studio-source.zip'
-      - '.github/workflows/shopify-ugc-studio-windows.yml'
   pull_request:
     paths:
       - 'shopify-ugc-studio-source.zip'
