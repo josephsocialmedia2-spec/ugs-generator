@@ -33,10 +33,14 @@ jobs:
       - name: Build standalone EXE
         working-directory: shopify-ugc-studio
         run: |
-          python -m PyInstaller --noconfirm --clean --onefile --noconsole --name ShopifyUGCStudio --add-data "templates;templates" --add-data "static;static" app/main.py
+          python -m PyInstaller --noconfirm --clean --onefile --noconsole --name ShopifyUGCStudio --paths "app" --add-data "templates;templates" --add-data "static;static" app/main.py
       - name: Built EXE self-test
         working-directory: shopify-ugc-studio
-        run: .\dist\ShopifyUGCStudio.exe --self-test
+        shell: powershell
+        run: |
+          $exe = Resolve-Path '.\dist\ShopifyUGCStudio.exe'
+          $p = Start-Process -FilePath $exe -ArgumentList '--self-test' -Wait -PassThru
+          if ($p.ExitCode -ne 0) { throw "Built EXE self-test failed with $($p.ExitCode)" }
       - name: Install Inno Setup
         run: choco install innosetup -y --no-progress
       - name: Compile installer
@@ -55,8 +59,8 @@ jobs:
         run: |
           $exe = Join-Path $env:LOCALAPPDATA 'Programs\ShopifyUGCStudio\ShopifyUGCStudio.exe'
           if (!(Test-Path $exe)) { throw 'Installed EXE missing' }
-          & $exe --self-test
-          if ($LASTEXITCODE -ne 0) { throw 'Installed self-test failed' }
+          $p = Start-Process -FilePath $exe -ArgumentList '--self-test' -Wait -PassThru
+          if ($p.ExitCode -ne 0) { throw "Installed self-test failed with $($p.ExitCode)" }
       - name: Installed HTTP and F1 Avatar health test
         shell: powershell
         run: |
@@ -69,7 +73,7 @@ jobs:
               try {
                 $r = Invoke-RestMethod -Uri 'http://127.0.0.1:7865/api/health' -TimeoutSec 2
                 $a = Invoke-RestMethod -Uri 'http://127.0.0.1:7865/api/avatar/status' -TimeoutSec 2
-                if ($r.status -eq 'ok' -and $r.local_only -eq $true -and $r.avatar_engine -eq 'F1 Avatar Engine' -and $a.remote_provider -eq $null) { $ok = $true; break }
+                if ($r.status -eq 'ok' -and $r.local_only -eq $true -and $r.avatar_engine -eq 'F1 Avatar Engine' -and $a.remote_provider -eq $null -and $a.local_only -eq $true) { $ok = $true; break }
               } catch {}
             }
             if (-not $ok) { throw 'Installed F1 Avatar application did not pass local health checks' }
