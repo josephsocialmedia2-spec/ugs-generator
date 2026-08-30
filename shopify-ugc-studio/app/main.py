@@ -55,6 +55,23 @@ def api_health():
     return jsonify({"status": "ok", "version": "2.2.0", "avatar_engine": "F1 Avatar Engine", "local_only": True})
 
 
+@app.post("/api/diagnostics/render")
+def api_diagnostics_render():
+    try:
+        with tempfile.TemporaryDirectory(prefix="f1-avatar-diagnostic-") as tmp:
+            video = render_video(
+                {"title": "F1 Avatar Diagnostic", "images": []},
+                {"hook": "Diagnostic", "script": "Local render diagnostic.", "cta": "OK", "scenes": ["Diagnostic", "Render", "OK"]},
+                Path(tmp), duration=1, fps=2, with_voice=False,
+            )
+            size = video.stat().st_size if video.exists() else 0
+            if size < 1000:
+                return jsonify({"ok": False, "error": "render output invalid", "bytes": size}), 500
+            return jsonify({"ok": True, "engine": "ugc_motion", "local_only": True, "bytes": size})
+    except Exception as exc:
+        return jsonify({"ok": False, "error": str(exc)}), 500
+
+
 @app.get("/api/settings")
 def api_settings_get():
     data = public_settings(load_settings(DATA_BASE))
@@ -223,11 +240,7 @@ def run_package_test() -> bool:
 def run_render_test(with_voice: bool = False) -> bool:
     try:
         with tempfile.TemporaryDirectory(prefix="shopify-ugc-render-test-") as tmp:
-            video = render_video(
-                {"title": "Self Test Product", "images": []},
-                {"hook": "Self test", "script": "Verifica automatica del motore video locale.", "cta": "OK", "scenes": ["Hook", "Demo", "CTA"]},
-                Path(tmp), duration=1, fps=2, with_voice=with_voice,
-            )
+            video = render_video({"title": "Self Test Product", "images": []}, {"hook": "Self test", "script": "Verifica automatica del motore video locale.", "cta": "OK", "scenes": ["Hook", "Demo", "CTA"]}, Path(tmp), duration=1, fps=2, with_voice=with_voice)
             return video.exists() and video.stat().st_size >= 1000
     except Exception:
         return False
@@ -251,9 +264,9 @@ def cli(argv=None) -> int:
     parser.add_argument("--no-browser", action="store_true")
     args = parser.parse_args(argv)
     if args.package_test:
-        ok = run_package_test(); return 0 if ok else 1
+        return 0 if run_package_test() else 1
     if args.render_test:
-        ok = run_render_test(with_voice=False); return 0 if ok else 1
+        return 0 if run_render_test(with_voice=False) else 1
     if args.self_test:
         ok = run_self_test(); print("SELF_TEST_OK" if ok else "SELF_TEST_FAILED"); return 0 if ok else 1
     if not args.no_browser: threading.Thread(target=_open_browser_later, daemon=True).start()
