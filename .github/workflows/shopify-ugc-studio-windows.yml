@@ -23,7 +23,9 @@ jobs:
           $b64 = $b64 -replace '\s',''
           [IO.File]::WriteAllBytes('shopify-ugc-studio-source-rebuilt.zip', [Convert]::FromBase64String($b64))
           Expand-Archive -Path 'shopify-ugc-studio-source-rebuilt.zip' -DestinationPath 'source'
-          Move-Item 'source\shopify_ugc_studio' 'shopify-ugc-studio'
+          $root = Get-ChildItem 'source' -Directory | Select-Object -First 1
+          if (-not $root) { throw 'Extracted source root missing' }
+          Move-Item $root.FullName 'shopify-ugc-studio'
       - name: Install Python dependencies
         working-directory: shopify-ugc-studio
         run: |
