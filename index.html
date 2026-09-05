@@ -11,13 +11,17 @@
 <body>
 <div class="page">
 <section class="profile"><div class="avatar"><span>F<b>1</b></span></div><div><div class="head"><span class="user">f1immobiliare</span><button class="follow">Modifica profilo</button></div><div class="stats"><span><b>5</b> post</span><span><b>F1</b> Casa e Imprese</span><span><b>40</b> comuni</span></div><div class="bio"><b>F1 Immobiliare · Casa e Imprese</b>Case · Persone · Territorio · Futuro<br>Via Roma 6, Sant’Antonino di Susa (TO)<br><a href="https://www.f1immobiliare.com">f1immobiliare.com</a></div></div></section>
-<div class="tools"><a class="primary" href="studio.html">Apri Content Studio</a><a class="secondary" href="data/query_f1_40_comuni_con_ricerca_personale_ogni_2_righe.xlsx">Apri Excel sorgente</a></div>
+<div class="tools"><a class="primary" href="studio.html">Apri Content Studio</a><a class="secondary" href="#" onclick="downloadExcel();return false;">Scarica Excel sorgente</a></div>
 <div class="tabs"><div class="tab">▦ POST</div></div>
 <div id="feed" class="grid"></div><div id="status" class="status">Caricamento prime 5 righe dall’Excel…</div>
 </div>
 <div id="modal" class="modal"><button class="close" onclick="closeModal()">×</button><div id="modalcard" class="modalcard"></div></div>
 <script>
-const FILE='data/query_f1_40_comuni_con_ricerca_personale_ogni_2_righe.xlsx';
+const PARTS=['data/xlsx_parts/part0.b64','data/xlsx_parts/part1.b64','data/xlsx_parts/part2.b64','data/xlsx_parts/part3.b64'];
+async function workbookBytes(){let b64='';for(const p of PARTS){const r=await fetch(p+'?v='+Date.now());if(!r.ok)throw new Error('parte Excel mancante');b64+=(await r.text()).trim()}const raw=atob(b64),u=new Uint8Array(raw.length);for(let i=0;i<raw.length;i++)u[i]=raw.charCodeAt(i);return u}
+function inferComune(q){const m=q.match(/(?:a|ad|in)\s+([A-Za-zÀ-ÿ’' -]+)$/i);return m?m[1].trim():'Susa'}
+function normalizeRows(ws){return XLSX.utils.sheet_to_json(ws,{defval:''}).map(x=>{const q=x.Query||x.Argomento||'';const low=q.toLowerCase();return{Query:q,Comune:x.Comune||inferComune(q),Categoria:x.Categoria||(/lavoro|agente immobiliare|collaboratore immobiliare|ricerca personale/.test(low)?'Ricerca personale':(/appartament|bilocal|trilocal|quadrilocal|cinque locali/.test(low)?'Appartamenti':'Generica'))}}).filter(x=>x.Query)}
+async function downloadExcel(){const u=await workbookBytes();const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([u],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}));a.download='query_f1_argomenti.xlsx';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
 const fallback=[
 {Comune:'Susa',Categoria:'Generica',Query:'immobili in vendita a Susa'},
 {Comune:'Susa',Categoria:'Generica',Query:'case in vendita a Susa'},
@@ -28,6 +32,6 @@ function spec(r){const q=(r.Query||'').toLowerCase(),c=(r.Comune||'Susa'),cat=(r
 function postHTML(r){const s=spec(r);return `<div class="post ${s.recruit?'recruit':''}"><div class="visual"></div><div class="shade"></div><div class="brand">F1 <b>IMMOBILIARE</b><small>CASA E IMPRESE</small></div><div class="copy"><div class="kicker">${s.k}</div><div class="title">${s.a}<em>${s.b}</em></div><div class="sub">${s.sub}</div><div class="desc">${s.d}</div></div><div class="chips">${s.chips.map((x,i)=>`<div class="chip"><span class="dot">${i==0?'✓':i==1?'⌂':'●'}</span>${x}</div>`).join('')}</div><div class="cta">${s.cta}<strong>371 370 8294</strong></div></div>`}
 function render(rows){const feed=document.getElementById('feed');feed.innerHTML='';rows.slice(0,5).forEach((r,i)=>{const t=document.createElement('div');t.className='tile';t.innerHTML=postHTML(r);t.onclick=()=>openModal(r);feed.appendChild(t)});document.getElementById('status').textContent='5 grafiche generate dal file Excel · clicca una grafica per vederla 4:5.'}
 function openModal(r){document.getElementById('modalcard').innerHTML=postHTML(r);document.getElementById('modal').classList.add('open')}function closeModal(){document.getElementById('modal').classList.remove('open')}document.getElementById('modal').addEventListener('click',e=>{if(e.target.id==='modal')closeModal()});
-(async()=>{try{const res=await fetch(FILE+'?v='+Date.now());if(!res.ok)throw 0;const wb=XLSX.read(await res.arrayBuffer(),{type:'array'});const ws=wb.Sheets[wb.SheetNames[0]];const rows=XLSX.utils.sheet_to_json(ws,{defval:''}).filter(x=>x.Query);render(rows)}catch(e){render(fallback);document.getElementById('status').textContent='Anteprima caricata. Il browser non ha letto l’Excel: uso le prime 5 righe incorporate.'}})();
+(async()=>{try{const u=await workbookBytes();const wb=XLSX.read(u,{type:'array'});const ws=wb.Sheets[wb.SheetNames[0]];const rows=normalizeRows(ws);render(rows);document.getElementById('status').textContent='5 grafiche generate dal file Excel completo (2.880 argomenti) · clicca una grafica per vederla 4:5.'}catch(e){console.error(e);render(fallback);document.getElementById('status').textContent='Anteprima caricata con le prime 5 righe incorporate.'}})();
 </script>
 </body></html>
